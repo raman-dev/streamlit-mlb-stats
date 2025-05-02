@@ -4,7 +4,7 @@ import json
 
 # st.write("hello")
 # st.write(statsapi.boxscore(565997))
-result = None
+# result = None
 # result = statsapi.get("schedule", {"startDate": "2023-03-30", "endDate": "2023-03-31"})
 # result = statsapi.schedule(start_date="2023-06-01",end_date="2023-06-07")
 
@@ -40,12 +40,13 @@ result = None
                 performance strikes/balls/strikeouts
                 
 """
-
+SEASON ="2025"
 @st.cache_data
 def getTeams():
     return statsapi.get("teams",params={'sportIds':1,'activeStatus':'Yes'})
 
 
+@st.cache_data
 def getTeamIds():
     #read from file if exists
     teams = None
@@ -85,6 +86,69 @@ st.selectbox(
     format_func=lambda x: x['name']
 )
 
-st.write(st.session_state['team'])
+# team_id = st.session_state['team']['id']
+#show the current teams hits rbi abs etc ...
+statGroups = []
+for result in statsapi.meta("statGroups"):
+    statGroups.append(result['displayName'])
+st.selectbox(
+    "Stat Groups",
+    statGroups,
+    key='statGroup',
+    format_func=lambda x:x.capitalize()
+)
+
+
+hitting_stats = statsapi.get("team_stats",
+                      params={
+                          'season':SEASON,
+                          'stats':'season',
+                          'teamId':st.session_state['team']['id'],
+                          'group':st.session_state['statGroup']})['stats']
+
+stat_dict = hitting_stats[0]["splits"][0]['stat']
+visibleStatOptions = stat_dict.keys()
+selection = st.pills("Stats",visibleStatOptions,selection_mode="multi",key="selectedStats")
+
+stat_table = {}
+for stat in st.session_state['selectedStats']:
+    stat_table[stat] = stat_dict[stat]
+st.table(stat_table)
+    # show team record?
+    # and next game
+
+standings = statsapi.standings_data(season='2025')
+# st.write(standings)
+
+    # structure
+
+    # div_name
+    # teams: 
+    #     name
+    #     div_rank
+    #     w
+    #     l
+    #     team_id
+    #     league_rank
+
+
+
+
+for k,d in standings.items():
+    # st.write(d)
+    div_name = d['div_name']
+    table = []
+    st.write(div_name)
+    for t in d['teams']:
+        row = {}
+        row['team_id'] = t['team_id']
+        row['name']= t['name']
+        row['wins'] = f'`{t["w"]}`'
+        row['losses'] = t['l']
+        table.append(row)
+    st.table(table)
+
+
+    
 
 
