@@ -86,18 +86,25 @@ current.write(current_teamName)
 other.write(other_teamName)
 
 standings = statsapi.standings_data(season='2025')
-
-for k,d in standings.items():
+#returns map split by division
+#div_id : {
+#   div_name:
+#   team_id_0: data,
+#   team_id_1: data,
+#   ...
+#}
+st.write(standings)
+for div_id,div_data in standings.items():
     # st.write(d)
-    div_name = d['div_name']
+    div_name = div_data['div_name']
     table = []
     # st.write(div_name)
-    for t in d['teams']:
+    for team_dict in div_data['teams']:
         row = {}
-        if t['team_id'] == team_id:
+        if team_dict['team_id'] == team_id:
             # row['team_id'] = t['team_id']
-            row['name']= t['name']
-            row['wins'] = f'`{t["w"]}`'
-            row['losses'] = t['l']
+            row['name']= team_dict['name']
+            row['wins'] = f'`{team_dict["w"]}`'
+            row['losses'] = team_dict['l']
             table.append(row)
             st.table(table)
