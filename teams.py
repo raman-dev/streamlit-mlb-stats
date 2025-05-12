@@ -105,12 +105,12 @@ if result != []:
     # current.write(current_teamName)
     # other.write(other_teamName)
     st.header(current_teamName)
-    columns = ["Hits Allowed","Runs Allowed"]
-    data = [[0,0]]
+    columns = ["Hits Allowed","Runs Allowed","RBIs","Hits"]
+    data = [[0] * len(columns)]
     df = pd.DataFrame(data=data,columns=columns)
-    # df_t = df.T.copy()
-    # df_t.columns = ["Value"]
-    # df_t= df_t.iloc[0:2]
+    df_t = df.T.copy()
+    df_t.columns = ["Value"]
+    st.dataframe(df_t)
     st.dataframe(df,hide_index=True)
     
     
