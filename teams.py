@@ -64,6 +64,17 @@ st.selectbox(
 
 
 @st.cache_data
+def get_stats(statGroup,statNames):
+    statDict = statsapi.get("team_stats",
+                      params={
+                          'season':SEASON,
+                          'stats':'season',
+                          'teamId':st.session_state['team']['id'],
+                          'group':statGroup})['stats'][0]['splits'][0]['stat']
+    return [ statDict[x] for x in statNames ]
+
+
+@st.cache_data
 def gamesToday(team_id,date):
     result = statsapi.schedule(start_date=date,
                   end_date=date,
@@ -105,15 +116,27 @@ if result != []:
     # current.write(current_teamName)
     # other.write(other_teamName)
     st.header(current_teamName)
-    columns = ["Hits Allowed","Runs Allowed","RBIs","Hits"]
-    data = [[0] * len(columns)]
+    columns = ["Hits Allowed","Runs Allowed","RBIs","Hits","Games Played"]
+
+    hittingStats = get_stats('hitting',['hits','rbi','gamesPlayed'])
+    pitchingStats = get_stats('pitching',['hits','runs'])
+    
+
+    data = [pitchingStats + hittingStats]
     df = pd.DataFrame(data=data,columns=columns)
     df_t = df.T.copy()
     df_t.columns = ["Value"]
     st.dataframe(df_t)
-    st.dataframe(df,hide_index=True)
+    # st.dataframe(df,hide_index=True)
     
-    
+    # """
+    #     statGroups:
+    #         hitting
+    #             hits,atBats,rbis
+    #         pitching
+    #             hits, numberOfPitches
+    #         fielding
+    # """
     st.header(other_teamName)
     # standings = statsapi.standings_data(season='2025')
     #returns map split by division
