@@ -116,12 +116,14 @@ if result != []:
     # current.write(current_teamName)
     # other.write(other_teamName)
     st.header(current_teamName)
+    
     columns = ["Hits Allowed","Runs Allowed","RBIs","Hits","Games Played"]
 
     hittingStats = get_stats('hitting',['hits','rbi','gamesPlayed'])
     pitchingStats = get_stats('pitching',['hits','runs'])
+    winsLosses = get_stats('pitching',['wins','losses'])
     
-
+    st.write(winsLosses)
     data = [pitchingStats + hittingStats]
     df = pd.DataFrame(data=data,columns=columns)
     df_t = df.T.copy()
