@@ -104,15 +104,19 @@ def showTeamsWithStats():
         
         hittingStats = get_stats('hitting',['hits','rbi','gamesPlayed'],id)
         pitchingStats = get_stats('pitching',['hits','runs'],id)
+
+        # st.write(pitchingStats,'putamadre')
         # winsLosses = get_stats('pitching',['wins','losses'],id)
         
         table.append([int(teamStanding['sport_rank'])] + 
                      [name] + 
                      [  teamStanding['w'],
                          teamStanding['l']] +
-                     hittingStats)
+                     hittingStats + 
+                     pitchingStats
+                     )
 
-    columns = ["Rank","team","wins","losses" ,"hits","rbi","gamesPlayed"]
+    columns = ["Rank","team","wins","losses" ,"hits","rbi","gamesPlayed","hits allowed","runs allowed"]
 
     df = pd.DataFrame(data=table,columns=columns)
     st.dataframe(df,hide_index=True)
