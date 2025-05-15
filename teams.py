@@ -47,13 +47,6 @@ def writeTeamIds():
 
 teamIds = getTeamIds()
 
-st.selectbox(
-    "Team",
-    teamIds,
-    key='team',
-    format_func=lambda x: x['name']
-)
-
 @st.cache_data
 def getStatDict(statGroup,teamId):
     return statsapi.get("team_stats",
@@ -155,7 +148,17 @@ def gamesToday(team_id,date):
 
 #format is mm/dd/yyyy as str
 
-team_id = st.session_state['team']['id']
+# team_id = st.session_state['team']['id']
+
+st.selectbox(
+    "Team",
+    teamIds,
+    key='team',
+    format_func=lambda x: x['name']
+)
+
+results = statsapi.schedule(team=st.session_state['team']['id'],season=2025,end_date=today_str,start_date='01/01/2025')
+st.write(results)
 # st.write(statsapi.team_leader_data(teamId=team_id,
 #                           leaderCategories=st.session_state['leagueLeaderTypes']['displayName'],
 #                           season=SEASON
