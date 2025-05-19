@@ -158,7 +158,24 @@ st.selectbox(
 )
 
 results = statsapi.schedule(team=st.session_state['team']['id'],season=2025,end_date=today_str,start_date='01/01/2025')
-st.write(results)
+# st.write(results)
+data = []
+for game in results:
+    id = game['game_id']
+    home_id = game['home_id']
+    away_id = game['away_id']
+    date = game['game_date']
+    home = game['home_name']
+    away = game['away_name']
+    away_runs = game['away_score']
+    home_runs = game['home_score']
+
+    data.append([
+        date,home,home_id,away,away_id,away_runs,home_runs
+    ])
+    #grab hits at bats walks
+
+st.table(data)
 # st.write(statsapi.team_leader_data(teamId=team_id,
 #                           leaderCategories=st.session_state['leagueLeaderTypes']['displayName'],
 #                           season=SEASON
