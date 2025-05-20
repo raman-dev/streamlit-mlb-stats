@@ -3,6 +3,7 @@ import statsapi
 import json
 from datetime import datetime
 import pandas as pd
+import server
 
 SEASON ="2025"
 
@@ -157,7 +158,12 @@ st.selectbox(
     format_func=lambda x: x['name']
 )
 
-results = statsapi.schedule(team=st.session_state['team']['id'],season=2025,end_date=today_str,start_date='01/01/2025')
+# results = server.getGamesPlayed(teamId=st.session_state['team']['id'],
+#                                 season=2025)
+results = statsapi.schedule(team=st.session_state['team']['id'],
+                            season=2025,
+                            end_date=today_str,
+                            start_date='01/01/2025')
 # st.write(results)
 data = []
 for game in results:
