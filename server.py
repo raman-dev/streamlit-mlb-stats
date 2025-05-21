@@ -3,6 +3,15 @@ import json
 from datetime import datetime,timedelta
 import diskcache
 
+SEASON = "2025"
+SEASON_START = "03/18/" + SEASON
+
+"""
+    store what?
+    linescore per game or histogram of linescore until today
+
+    need per game hits, at bats, runs
+"""
 
 def getGamesPlayed(teamId: int,season: int):
     if type(teamId) != int:
@@ -12,7 +21,7 @@ def getGamesPlayed(teamId: int,season: int):
     
     #create date range from start of season to today
     endDate = datetime.today().strftime('%m/%d/%Y')
-    startDate = "01/01/" + str(season)
+    startDate = SEASON_START
     """
         check diskcache for data for teamid and season and enddate
 
@@ -24,20 +33,35 @@ def getGamesPlayed(teamId: int,season: int):
     with diskcache.Cache('statsapi_cache') as cache:
         key = f"games_played_{teamId}_{season}"
         if key in cache:
+            print('using cache')
             stored = cache[key]
             if stored['endDate'] < endDate: #dates are strings
                 # query statsapi for games played from stored enddate to today
                 endDatePlusOne = datetime.strptime(stored['endDate'], '%m/%d/%Y') + timedelta(days=1)
-                result = statsapi.get(
-                    "schedule",
-                    params={
-                        'teamId': teamId,
-                        'season': season,
-                        'startDate': endDatePlusOne.strftime('%m/%d/%Y'),
-                        'endDate': endDate,
-                    }
-                )
+                result = statsapi.schedule(
+                        team=teamId,
+                        season=season,
+                        start_date=endDatePlusOne.strftime('%m/%d/%Y'),
+                        end_date=endDate)
                 stored['data'] += result
+                stored['endDate'] = endDate
+                cache[key] = stored
+            else:
+                # return the data from diskcache
+                return cache[key]['data']
+        else:
+            # query statsapi for games played from startDate to today
+            result = statsapi.schedule(
+                        team=teamId,
+                        season=season,
+                        start_date=startDate,
+                        end_date=endDate)
+            stored = {
+                'data': result,
+                'endDate': endDate
+            }
+            cache[key] = stored 
+            return result
         # store the data in diskcache
         # cache[key] = result['dates']
     return []

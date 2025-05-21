@@ -158,13 +158,13 @@ st.selectbox(
     format_func=lambda x: x['name']
 )
 
-# results = server.getGamesPlayed(teamId=st.session_state['team']['id'],
-#                                 season=2025)
-results = statsapi.schedule(team=st.session_state['team']['id'],
-                            season=2025,
-                            end_date=today_str,
-                            start_date='01/01/2025')
-# st.write(results)
+results = server.getGamesPlayed(teamId=st.session_state['team']['id'],
+                                season=2025)
+# results = statsapi.schedule(team=st.session_state['team']['id'],
+#                             season=2025,
+#                             end_date=today_str,
+#                             start_date='03/19/2025')
+st.write(results)
 data = []
 for game in results:
     id = game['game_id']
