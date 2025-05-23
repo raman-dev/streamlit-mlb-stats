@@ -13,6 +13,23 @@ SEASON_START = "03/18/" + SEASON
     need per game hits, at bats, runs
 """
 
+def clearGamesPlayed(teamId: int, season: int):
+    """
+        clear the cache for the given key
+    """
+    if type(teamId) != int:
+        return False
+    if type(season) != int:
+        return False
+    
+    key = f"games_played_{teamId}_{season}"
+
+    with diskcache.Cache('statsapi_cache') as cache:
+        cache.pop(key,None)
+        print('Cleared cache for', key)
+        # del cache[key]
+    return True
+
 def getGamesPlayed(teamId: int,season: int):
     if type(teamId) != int:
         return []
@@ -32,8 +49,9 @@ def getGamesPlayed(teamId: int,season: int):
     """
     with diskcache.Cache('statsapi_cache') as cache:
         key = f"games_played_{teamId}_{season}"
+    
         if key in cache:
-            print('using cache')
+            print('using cache',key)
             stored = cache[key]
             if stored['endDate'] < endDate: #dates are strings
                 # query statsapi for games played from stored enddate to today
@@ -46,10 +64,13 @@ def getGamesPlayed(teamId: int,season: int):
                 stored['data'] += result
                 stored['endDate'] = endDate
                 cache[key] = stored
+                
+                return stored['data']
             else:
                 # return the data from diskcache
                 return cache[key]['data']
         else:
+            print('Fetching from statsapi',key)
             # query statsapi for games played from startDate to today
             result = statsapi.schedule(
                         team=teamId,

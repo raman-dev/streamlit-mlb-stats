@@ -164,24 +164,90 @@ results = server.getGamesPlayed(teamId=st.session_state['team']['id'],
 #                             season=2025,
 #                             end_date=today_str,
 #                             start_date='03/19/2025')
-st.write(results)
-data = []
-for game in results:
-    id = game['game_id']
-    home_id = game['home_id']
-    away_id = game['away_id']
-    date = game['game_date']
-    home = game['home_name']
-    away = game['away_name']
-    away_runs = game['away_score']
-    home_runs = game['home_score']
 
-    data.append([
-        date,home,home_id,away,away_id,away_runs,home_runs
-    ])
+st.button("Clear Team Cache",
+          on_click=server.clearGamesPlayed,kwargs={
+              'teamId':st.session_state['team']['id'],
+              'season':2025})
+
+def gamesPlayed(results):
+    data = []
+    for game in results:
+        id = game['game_id']
+        home_id = game['home_id']
+        away_id = game['away_id']
+        date = game['game_date']
+        home = game['home_name']
+        away = game['away_name']
+        away_runs = game['away_score']
+        home_runs = game['home_score']
+    
+    # x = statsapi.get("game_linescore",params={
+    #     'gamePk':id
+    # })
+    # st.write(x)
+    # """
+    #     returns a dict
+    #         keys
+    #             innings : [
+    #                 9 innings data
+    #                     ith_{
+    #                         home {
+    #                             runs                
+    #                             }
+    #                     }
+    #             ]
+    #     game_id: {
+    #         home {
+    #             total_runs
+    #             total_hits
+    #             0 : r,h
+    #             1 : r,h
+    #             2 : 
+    #         }
+    #         away {
+    #             total_runs
+    #             total_hits
+    #         }
+    #     }
+    # """
+    # game
+    #     id
+    #     home_id
+    #     away_id
+    #     home 
+    #         runs
+    #         hits
+    #     away 
+    #         runs
+    #         hits 
+    #     innings 
+    #       runs:
+    #         h : [0,0,0,0,0,0,0,0,0],
+    #         a : [0,0,0,0,0,0,0,0,0]
+    #       hits:
+    #         h : [0,0,0,0,0,0,0,0,0],
+    #         a : [0,0,0,0,0,0,0,0,0]
+    
+    # team_histogram
+    #     team_id
+    #     runs : [0,0,0,0,0,0,0,0,0]
+    #     hits: [0,0,0,0,0,0,0,0,0]
+    #     runs_allowed: [0,0,0,0,0,0,0,0,0]
+    #     hits_allowed: [0,0,0,0,0,0,0,0,0]
+    # """
+    # """
+    # break
+        data.append([
+            id,date,home,home_id,away,away_id,away_runs,home_runs
+        ])
     #grab hits at bats walks
 
-st.table(data)
+    st.table(data)
+
+
+gamesPlayed(results)
+
 # st.write(statsapi.team_leader_data(teamId=team_id,
 #                           leaderCategories=st.session_state['leagueLeaderTypes']['displayName'],
 #                           season=SEASON
