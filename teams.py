@@ -3,6 +3,7 @@ import statsapi
 import json
 from datetime import datetime
 import pandas as pd
+import numpy as np
 import server
 
 SEASON ="2025"
@@ -158,17 +159,17 @@ st.selectbox(
     format_func=lambda x: x['name']
 )
 
-results = server.getGamesPlayed(teamId=st.session_state['team']['id'],
-                                season=2025)
+# results = server.getGamesPlayed(teamId=st.session_state['team']['id'],
+#                                 season=2025)
 # results = statsapi.schedule(team=st.session_state['team']['id'],
 #                             season=2025,
 #                             end_date=today_str,
 #                             start_date='03/19/2025')
 
-st.button("Clear Team Cache",
-          on_click=server.clearGamesPlayed,kwargs={
-              'teamId':st.session_state['team']['id'],
-              'season':2025})
+# st.button("Clear Team Cache",
+#           on_click=server.clearGamesPlayed,kwargs={
+#               'teamId':st.session_state['team']['id'],
+#               'season':2025})
 
 def gamesPlayed(results):
     data = []
@@ -246,5 +247,16 @@ def gamesPlayed(results):
     st.table(data)
 
 
-gamesPlayed(results)
+# gamesPlayed(results)
 
+"""
+    show a bar graph of hits for every inning
+
+"""
+
+x = [0,1,2,3]
+y = [3,1,5,8]
+
+df = pd.DataFrame(data=y)
+st.write(df)
+st.bar_chart(data=df)
