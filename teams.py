@@ -254,9 +254,10 @@ def gamesPlayed(results):
 
 """
 
-x = [0,1,2,3]
-y = [3,1,5,8]
+columns = ["hits per inning","runs per inning"]
+hits = [2,4,6,7,12,4,2,1,0.5]
+runs = [4,3,1,3,5,6,8,9,1]
 
-df = pd.DataFrame(data=y)
-st.write(df)
+df = pd.DataFrame(data={"hits per inning":hits,"runs per inning":runs})
+# st.write(df)
 st.bar_chart(data=df)
