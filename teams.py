@@ -159,8 +159,8 @@ st.selectbox(
     format_func=lambda x: x['name']
 )
 
-# results = server.getGamesPlayed(teamId=st.session_state['team']['id'],
-#                                 season=2025)
+results = server.getGamesPlayed(teamId=st.session_state['team']['id'],
+                                season=2025)
 # results = statsapi.schedule(team=st.session_state['team']['id'],
 #                             season=2025,
 #                             end_date=today_str,
@@ -170,9 +170,12 @@ st.selectbox(
 #           on_click=server.clearGamesPlayed,kwargs={
 #               'teamId':st.session_state['team']['id'],
 #               'season':2025})
-
+testGameId = 777917
+testHomeId = 133
+testAwayId = 119
 def gamesPlayed(results):
     data = []
+    global testGameId
     for game in results:
         id = game['game_id']
         home_id = game['home_id']
@@ -186,6 +189,7 @@ def gamesPlayed(results):
     # x = statsapi.get("game_linescore",params={
     #     'gamePk':id
     # })
+        
 
     # """
     # break
@@ -197,7 +201,23 @@ def gamesPlayed(results):
     st.table(data)
 
 
-# gamesPlayed(results)
+@st.cache_data
+def getLinescore(gameId):
+    return statsapi.get("game_linescore",params={
+    'gamePk':gameId
+    })
+
+linescore = getLinescore(testGameId)
+linescoreHistogram = server.LinescoreHistogram(teamId=st.session_state['team']['id'],teamName="Athletics")
+linescoreHistogram.addLinescore(linescore=linescore,homeId=testHomeId)
+st.write(linescoreHistogram)
+#filter to home {
+#   hits:[x,x,x,x...]
+#   runs:[x,x,x,x...]   
+#}
+
+
+gamesPlayed(results)
 
 """
     show a bar graph of hits for every inning
