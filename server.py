@@ -3,6 +3,8 @@ import json
 from datetime import datetime,timedelta
 import diskcache
 
+from dataclasses import dataclass
+
 SEASON = "2025"
 SEASON_START = "03/18/" + SEASON
 
@@ -12,6 +14,59 @@ SEASON_START = "03/18/" + SEASON
 
     need per game hits, at bats, runs
 """
+# class Game:
+#     def __init__(self,gameData):
+#         self.gameId = gameData['game_id']
+#         self.homeId = gameData['home_id']
+#         self.awayId = gameData['away_id']
+#         self.date = gameData['game_date']
+#         self.homeName = gameData['home_name']
+#         self.awayName = gameData['away_name']
+#         self.awayRuns = gameData['away_score']
+#         self.homeRuns = gameData['home_score']
+
+@dataclass
+class GamesPlayedData:
+    teamId: int
+    season: int
+    games: list
+    """
+    list of what objects
+        {
+            runs_scored: int
+            runs_allowed: int
+            hits: int
+            hits_allowed: int
+            gameWon: bool
+            errors: int
+            date: str
+            gameId: int
+        }
+    """
+    def addGame(self,gameData):
+        game = {}
+        isHomeTeam = gameData['home_id'] == self.teamId
+        game['gameId'] = gameData['game_id']
+        game['date'] = gameData['game_date']
+
+        if isHomeTeam:
+            game['runs_scored'] = gameData['home_score']
+            game['runs_allowed'] = gameData['away_score']
+            game['hits'] = gameData['home_hits']
+            game['hits_allowed'] = gameData['away_hits']
+        else:
+            game['runs_scored'] = gameData['away_score']
+            game['runs_allowed'] = gameData['home_score']
+            game['hits'] = gameData['away_hits']
+            game['hits_allowed'] = gameData['home_hits']
+
+        game['gameWon'] = game['runs_scored'] > game['runs_allowed']
+
+@dataclass
+class Linescore:
+    gameId: int
+    linescoreData: dict
+
 class LinescoreHistogram:
     def __init__(self,teamId,teamName="N/A"):
         self.teamId = teamId
@@ -120,7 +175,11 @@ def getLinescoreHistogram(teamId: int, season: int, teamName: str="N/A"):
             linescoreHistogram = cache[key]
             return linescoreHistogram
         else:
-            return None
+            #get games played for teamId and season
+            #grab gameId's 
+            #use gameIds to get linescores
+            #store games and gameIds in cache?
+            pass
     #if not up to date grab games played after last date in object
     #grab linescores for each game played ``
     #update object for each linescore

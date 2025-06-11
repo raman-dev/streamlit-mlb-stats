@@ -208,6 +208,7 @@ def getLinescore(gameId):
     })
 
 linescore = getLinescore(testGameId)
+st.write(linescore)
 linescoreHistogram = server.LinescoreHistogram(teamId=st.session_state['team']['id'],teamName="Athletics")
 linescoreHistogram.addLinescore(linescore=linescore,homeId=testHomeId)
 st.write(linescoreHistogram)
