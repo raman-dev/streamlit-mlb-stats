@@ -2,11 +2,13 @@ import statsapi
 import json
 from datetime import datetime,timedelta
 import diskcache
+import functools
 
 from dataclasses import dataclass
 
 SEASON = "2025"
 SEASON_START = "03/18/" + SEASON
+CACHE_DIR = "statsapi_cache"
 
 """
     store what?
@@ -24,6 +26,8 @@ SEASON_START = "03/18/" + SEASON
 #         self.awayName = gameData['away_name']
 #         self.awayRuns = gameData['away_score']
 #         self.homeRuns = gameData['home_score']
+
+
 
 @dataclass
 class GamesPlayedData:
@@ -66,6 +70,7 @@ class GamesPlayedData:
 class Linescore:
     gameId: int
     linescoreData: dict
+
 
 class LinescoreHistogram:
     def __init__(self,teamId,teamName="N/A"):
@@ -170,7 +175,7 @@ def getLinescoreHistogram(teamId: int, season: int, teamName: str="N/A"):
     #if in cache fetch object
     key = f'linescore_histogram_{teamId}_{season}'
     #check if object is up to date
-    with diskcache.Cache('statsapi_cache') as cache:
+    with diskcache.Cache(CACHE_DIR) as cache:
         if key in cache:
             linescoreHistogram = cache[key]
             return linescoreHistogram
@@ -196,7 +201,7 @@ def clearGamesPlayed(teamId: int, season: int):
     
     key = f"games_played_{teamId}_{season}"
 
-    with diskcache.Cache('statsapi_cache') as cache:
+    with diskcache.Cache(CACHE_DIR) as cache:
         cache.pop(key,None)
         print('Cleared cache for', key)
         # del cache[key]
@@ -219,7 +224,7 @@ def getGamesPlayed(teamId: int,season: int):
         merge the data with the data in diskcache
         store the data in diskcache
     """
-    with diskcache.Cache('statsapi_cache') as cache:
+    with diskcache.Cache(CACHE_DIR) as cache:
         key = f"games_played_{teamId}_{season}"
     
         if key in cache:
