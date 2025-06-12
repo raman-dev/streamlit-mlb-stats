@@ -168,8 +168,18 @@ class LinescoreHistogram:
     
     def __str__(self):
         return f'Team:{self.teamName} Linescore Histogram\n teamId: {self.teamId} \n hits: {self.hits} \n runs: {self.runs} \n hits allowed: {self.hits_allowed} \n runs allowed: {self.runs_allowed} \n total hits: {self.total_hits} \n total runs: {self.total_runs} \n total hits allowed: {self.total_hits_allowed} \n total runs allowed: {self.total_runs_allowed} \n games played: {self.games_played}\n'
-    
 
+
+def diskcache_it(key_prefix="",keys=[]):
+    def decorator_wrapper(func):
+        @functools.wraps(func)
+        def wrapper(*args,**kwargs):
+            result = func(*args,**kwargs)
+            return result
+        return wrapper
+    return decorator_wrapper
+
+@diskcache_it(key_prefix="linescore",keys=["teamId"])
 def getLinescoreHistogram(teamId: int, season: int, teamName: str="N/A"):
     #check if object key in diskcache
     #if in cache fetch object
