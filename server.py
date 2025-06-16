@@ -16,18 +16,6 @@ CACHE_DIR = "statsapi_cache"
 
     need per game hits, at bats, runs
 """
-# class Game:
-#     def __init__(self,gameData):
-#         self.gameId = gameData['game_id']
-#         self.homeId = gameData['home_id']
-#         self.awayId = gameData['away_id']
-#         self.date = gameData['game_date']
-#         self.homeName = gameData['home_name']
-#         self.awayName = gameData['away_name']
-#         self.awayRuns = gameData['away_score']
-#         self.homeRuns = gameData['home_score']
-
-
 
 @dataclass
 class GamesPlayedData:
@@ -65,11 +53,6 @@ class GamesPlayedData:
             game['hits_allowed'] = gameData['home_hits']
 
         game['gameWon'] = game['runs_scored'] > game['runs_allowed']
-
-@dataclass
-class Linescore:
-    gameId: int
-    linescoreData: dict
 
 
 class LinescoreHistogram:
@@ -174,12 +157,22 @@ def diskcache_it(key_prefix="",keys=[]):
     def decorator_wrapper(func):
         @functools.wraps(func)
         def wrapper(*args,**kwargs):
-            result = func(*args,**kwargs)
+            cache_key = key_prefix
+            for k in keys:
+                cache_key += "_"+k
+            
+            result = None
+            with diskcache.Cache(CACHE_DIR) as cache:
+                if cache_key in cache:
+                    result = cache[cache_key]['data']
+                else:
+                    result = func(*args,**kwargs)
+                    cache[cache_key]['data'] = result
             return result
         return wrapper
     return decorator_wrapper
 
-@diskcache_it(key_prefix="linescore",keys=["teamId"])
+@diskcache_it(key_prefix="linescore",keys=["teamId","season"])
 def getLinescoreHistogram(teamId: int, season: int, teamName: str="N/A"):
     #check if object key in diskcache
     #if in cache fetch object

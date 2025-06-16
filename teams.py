@@ -218,17 +218,17 @@ st.write(linescoreHistogram)
 #}
 
 
-gamesPlayed(results)
+# gamesPlayed(results)
 
 """
     show a bar graph of hits for every inning
 
 """
 
-columns = ["hits per inning","runs per inning"]
-hits = [2,4,6,7,12,4,2,1,0.5]
-runs = [4,3,1,3,5,6,8,9,1]
+# columns = ["hits per inning","runs per inning"]
+# hits = [2,4,6,7,12,4,2,1,0.5]
+# runs = [4,3,1,3,5,6,8,9,1]
 
-df = pd.DataFrame(data={"hits per inning":hits,"runs per inning":runs})
-st.subheader("Hits/Runs Per Inning")
-st.bar_chart(data=df,color=["#fd0","#f0f"])
+# df = pd.DataFrame(data={"hits per inning":hits,"runs per inning":runs})
+# st.subheader("Hits/Runs Per Inning")
+# st.bar_chart(data=df,color=["#fd0","#f0f"])
