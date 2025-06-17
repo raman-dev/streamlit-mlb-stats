@@ -6,7 +6,9 @@ import pandas as pd
 import numpy as np
 import server
 
-SEASON ="2025"
+import diskcache
+
+SEASON=2025
 
 today = datetime.today()
 today_str = today.strftime("%m/%d/%Y")
@@ -19,15 +21,18 @@ def getTeams():
 @st.cache_data
 def getTeamIds():
     #read from file if exists
-    teams = None
+    # teams = None
+    teamsDict = None
     try:
         with open('team_ids.json','r') as f:
-            teams = json.load(f)
+            # teams = json.load(f)
+            teamsDict = json.load(f)
     except FileNotFoundError:
         print('creating team_ids file')
-        teams = writeTeamIds()
+        # teams = writeTeamIds()
+        teamsDict = writeTeamIds()
     
-    return teams
+    return teamsDict
 
 def writeTeamIds():
     
@@ -35,19 +40,21 @@ def writeTeamIds():
     #     f.write()
     result = getTeams()
     teams = []
+    teamsDict = {}
     for team_data_map in result['teams']:
         # for x in team_data:
         #     st.write(x)
         # st.write(team_data_map['name'],team_data_map['id'])
-        teams.append({'id':team_data_map['id'],'name': team_data_map['name']})
-
+        # teams.append({'id':team_data_map['id'],'name': team_data_map['name']})
+        teamsDict[team_data_map['id']] = {'id':team_data_map['id'],'name': team_data_map['name']}
     # st.write(teams)
     with open('team_ids.json','w+') as f:
-        f.write(json.dumps(teams))
+        f.write(json.dumps(teamsDict))
     
-    return teams
+    return teamsDict
 
-teamIds = getTeamIds()
+# teamIds = getTeamIds()
+teamIdsDict = getTeamIds()
 
 @st.cache_data
 def getStatDict(statGroup,teamId):
@@ -71,7 +78,7 @@ def showTeamsWithStats():
         write as table
     """
     table = []
-    standings = statsapi.standings_data(season='2025')
+    standings = statsapi.standings_data(season=SEASON)
     # st.write(standings)
     # """
         # standings -> {
@@ -90,9 +97,9 @@ def showTeamsWithStats():
             teamStandingDict[team_dict['team_id']] = team_dict
         
     # st.write(teamStandingDict) 
-    for d in teamIds:
+    for id,d in teamIdsDict.items():
         name = d['name']
-        id = d['id']
+        # id = d['id']
 
         
         teamStanding = teamStandingDict[id]
@@ -154,94 +161,88 @@ def gamesToday(team_id,date):
 
 st.selectbox(
     "Team",
-    teamIds,
+    list(teamIdsDict.values()),
     key='team',
     format_func=lambda x: x['name']
 )
-
-results = server.getGamesPlayed(teamId=st.session_state['team']['id'],
-                                season=2025)
-
-# results = statsapi.schedule(team=st.session_state['team']['id'],
-#                             season=2025,
-#                             end_date=today_str,
-#                             start_date='03/19/2025')
 
 # st.button("Clear Team Cache",
 #           on_click=server.clearGamesPlayed,kwargs={
 #               'teamId':st.session_state['team']['id'],
 #               'season':2025})
-testGameId = 777917
-testHomeId = 133
-testAwayId = 119
-def showGamesPlayed(results):
-    data = []
-    global testGameId
-    for game in results:
-        id = game['game_id']
-        home_id = game['home_id']
-        away_id = game['away_id']
-        date = game['game_date']
-        home = game['home_name']
-        away = game['away_name']
-        away_runs = int(game['away_score'])
-        home_runs = int(game['home_score'])
-    
-    # x = statsapi.get("game_linescore",params={
-    #     'gamePk':id
-    # })
-        
 
-    # """
-    # break
-        data.append([
-            id,date,home,home_id,away,away_id,away_runs,home_runs
-        ])
-    #grab hits at bats walks
-
-    st.table(data)
-
-
-# linescore = server.getLinescore(testGameId)
-# # st.write(linescore)
-# linescoreHistogram = server.LinescoreHistogram(teamId=st.session_state['team']['id'],teamName="N/A")
-# linescoreHistogram.addLinescore(linescore=linescore,homeId=testHomeId)
-linescoreHistogram = server.getLinescoreHistogram(teamId=st.session_state['team']['id'],season=SEASON)
-st.write(linescoreHistogram)
 #filter to home {
 #   hits:[x,x,x,x...]
 #   runs:[x,x,x,x...]   
 #}
 
 def updateLinescoreHistogram():
-    for nameData in teamIds:
-        name,id = nameData.values()
+    for id,nameData in teamIdsDict.items():
+        name = nameData['name']
         st.write(name,id)
         linescoreHistogram = server.getLinescoreHistogram(teamId=id,season=SEASON)
 
-showGamesPlayed(results)
+# showGamesPlayed(results)
 
-"""
-    show a bar graph of hits for every inning
 
-"""
-
-# columns = ["hits per inning","runs per inning"]
-# hits = [2,4,6,7,12,4,2,1,0.5]
-# runs = [4,3,1,3,5,6,8,9,1]
-
-# df = pd.DataFrame(data={"hits per inning":hits,"runs per inning":runs})
-# st.subheader("Hits/Runs Per Inning")
-# st.bar_chart(data=df,color=["#fd0","#f0f"])
 
 def updateGamesPlayed():
 # st.write(teamIds)
 # fetch games played for each team
 # and update cache if necessary
-    for data in teamIds:
+    for id,data in teamIdsDict.items():
         # st.write(data)
-        id,name = data.values()
+        name = data['name']
         st.write(name,id)
         server.getGamesPlayed(teamId=id,season=2025)
+
+def removeAllLinescoreHistogramsFromCache():
+    with diskcache.Cache(server.CACHE_DIR) as cache:
+        #remove histogram from cache
+        keys = list(filter(lambda x: 'linescore_histogram' in x,list(cache.iterkeys())))
+        st.write('Deleting => ',keys)
+        for k in keys:
+            cache.pop(k)
+
+# st.write(teamIdsDict)
+
+def showSavedLinescoreHistograms():
+    with diskcache.Cache(server.CACHE_DIR) as cache:
+        keys = list(filter(lambda x: 'linescore_histogram' in x,list(cache.iterkeys())))
+        st.write('Saved Linescore Histograms:',keys)
+        # for k in keys:
+        #     st.write(k)
+
+showSavedLinescoreHistograms()
+# removeAllLinescoreHistogramsFromCache()
+def createLinescoreHistograms():
+    for teamId in teamIdsDict:
+
+        teamName = teamIdsDict[teamId]['name']
+        st.write(teamName,teamId)
+
+        linescoreHistogram = server.getLinescoreHistogram(teamId=teamId,season=SEASON,teamName=teamName)
+        st.write(linescoreHistogram)
+        break
+
+
+# createLinescoreHistograms()
+linescoreHistogram = server.getLinescoreHistogram(teamId=st.session_state['team']['id'],
+                                                  season=SEASON,
+                                                  teamName=st.session_state['team']['name'])
+linescoreHistogram.calculateAverages()
+
+with diskcache.Cache(server.CACHE_DIR) as cache:
+    cache.set(f'linescore_histogram_{st.session_state["team"]["id"]}_{SEASON}',linescoreHistogram)
+st.write(linescoreHistogram)
+"""
+    show a bar graph of hits for every inning
+"""
+
+columns = ["hits per inning","runs per inning"]
+df = pd.DataFrame(data={"hits per inning":linescoreHistogram.averages['hits'],
+                        "runs per inning":linescoreHistogram.averages['runs']})
+st.subheader("Total Hits:Total Runs, Per Inning")
+st.bar_chart(data=df,color=["#fd0","#f0f"])
 
 

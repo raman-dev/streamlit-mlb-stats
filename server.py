@@ -77,20 +77,23 @@ def getLinescore(gameId: int):
             cache[key] = linescore
             return linescore
 
-def getLinescoreHistogram(teamId: int, season: int):
+def getLinescoreHistogram(teamId: int, season: int,teamName: str = "N/A"):
     #check if diskcache has data for teamId and season
     with diskcache.Cache(CACHE_DIR) as cache:
         key = f"linescore_histogram_{teamId}_{season}"
         if key in cache:
-            print('Using cached linescore histogram for', teamId, season)
+            print(f'Using cached linescore histogram for key: {key}')
             return cache[key]
         else:
-            print('Fetching linescore histogram from statsapi for', teamId, season)
-            gamesPlayed = getGamesPlayed(teamId, season)
-            histogram = LinescoreHistogram(teamId=teamId, teamName="N/A")
-            for game in gamesPlayed:
-                linescore = getLinescore(gameId=game['game_id'])
-                histogram.addLinescore(linescore, homeId=game['home_id'])
+            print(f'Fetching linescore histogram from statsapi for key: {key}')
+            gamesPlayed = getGamesPlayed(teamId=teamId, season=season)
+            print('Number of games played:', len(gamesPlayed))
+            histogram = LinescoreHistogram(teamId=teamId, teamName=teamName)
+            
+            for gp in gamesPlayed:
+                linescore = getLinescore(gameId=gp['game_id'])
+                histogram.addLinescore(linescore, homeId=gp['home_id'])
+            
             cache[key] = histogram
             return histogram
 
@@ -132,7 +135,8 @@ class LinescoreHistogram:
         self.eighth = []#only eighth inning data
         self.ninth = []#only ninth inning data
 
-
+        self.averages = {}
+    
     def addLinescore(self,linescore,homeId):
         isHomeTeam = homeId == self.teamId
         """
@@ -190,6 +194,22 @@ class LinescoreHistogram:
 
         self.games_played += 1
     
+    def calculateAverages(self): 
+        """
+            calculate averages for hits and runs per inning
+            return a dict with the averages
+        """
+        self.averages = {
+            'hits': [round(h / self.games_played, 2) for h in self.hits],
+            'runs': [round(r / self.games_played, 2) for r in self.runs],
+            'hits_allowed': [round(ha / self.games_played, 2) for ha in self.hits_allowed],
+            'runs_allowed': [round(ra / self.games_played, 2) for ra in self.runs_allowed],
+            'total_hits': round(self.total_hits / self.games_played, 2),
+            'total_runs': round(self.total_runs / self.games_played, 2),
+            'total_hits_allowed': round(self.total_hits_allowed / self.games_played, 2),
+            'total_runs_allowed': round(self.total_runs_allowed / self.games_played, 2)
+        }
+
     def __str__(self):
         return f'Team:{self.teamName} Linescore Histogram\n teamId: {self.teamId} \n hits: {self.hits} \n runs: {self.runs} \n hits allowed: {self.hits_allowed} \n runs allowed: {self.runs_allowed} \n total hits: {self.total_hits} \n total runs: {self.total_runs} \n total hits allowed: {self.total_hits_allowed} \n total runs allowed: {self.total_runs_allowed} \n games played: {self.games_played}\n'
 
@@ -253,12 +273,14 @@ def clearGamesPlayed(teamId: int, season: int):
 
 def getGamesPlayed(teamId: int,season: int):
     if type(teamId) != int:
+        print('teamId is not an int:', teamId)
         return []
     if type(season) != int:
+        print('season is not an int:', season)
         return []
     
     #create date range from start of season to today
-    endDate = datetime.today().strftime('%m/%d/%Y')
+    currentDate = datetime.today().strftime('%m/%d/%Y')
     startDate = SEASON_START
     """
         check diskcache for data for teamid and season and enddate
@@ -274,22 +296,23 @@ def getGamesPlayed(teamId: int,season: int):
         if key in cache:
             print('using cache',key)
             stored = cache[key]
-            if stored['endDate'] < endDate: #dates are strings
+            if stored['endDate'] < currentDate: #dates are strings
                 # query statsapi for games played from stored enddate to today
                 endDatePlusOne = datetime.strptime(stored['endDate'], '%m/%d/%Y') + timedelta(days=1)
                 result = statsapi.schedule(
                         team=teamId,
                         season=season,
                         start_date=endDatePlusOne.strftime('%m/%d/%Y'),
-                        end_date=endDate)
+                        end_date=currentDate)
                 stored['data'] += result
-                stored['endDate'] = endDate
+                stored['endDate'] = currentDate
                 cache[key] = stored
                 
                 return stored['data']
             else:
                 # return the data from diskcache
-                return cache[key]['data']
+                print('Returning cached data for', key)
+                return stored['data']
         else:
             print('Fetching from statsapi',key)
             # query statsapi for games played from startDate to today
@@ -297,10 +320,10 @@ def getGamesPlayed(teamId: int,season: int):
                         team=teamId,
                         season=season,
                         start_date=startDate,
-                        end_date=endDate)
+                        end_date=currentDate)
             stored = {
                 'data': result,
-                'endDate': endDate
+                'endDate': currentDate
             }
             cache[key] = stored 
             return result
