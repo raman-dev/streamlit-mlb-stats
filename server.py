@@ -55,6 +55,47 @@ class GamesPlayedData:
         game['gameWon'] = game['runs_scored'] > game['runs_allowed']
 
 
+def getLinescore(gameId: int):
+    """
+        get linescore for gameId
+        if linescore is not in diskcache, fetch from statsapi
+        store in diskcache
+    """
+    if type(gameId) != int:
+        return None
+    
+    with diskcache.Cache(CACHE_DIR) as cache:
+        key = f"linescore_{gameId}"
+        if key in cache:
+            print('Using cached linescore for', gameId)
+            return cache[key]
+        else:
+            print('Fetching linescore from statsapi for', gameId)
+            linescore = statsapi.get("game_linescore",params={
+                'gamePk':gameId
+            })
+            cache[key] = linescore
+            return linescore
+
+def getLinescoreHistogram(teamId: int, season: int):
+    #check if diskcache has data for teamId and season
+    with diskcache.Cache(CACHE_DIR) as cache:
+        key = f"linescore_histogram_{teamId}_{season}"
+        if key in cache:
+            print('Using cached linescore histogram for', teamId, season)
+            return cache[key]
+        else:
+            print('Fetching linescore histogram from statsapi for', teamId, season)
+            gamesPlayed = getGamesPlayed(teamId, season)
+            histogram = LinescoreHistogram(teamId=teamId, teamName="N/A")
+            for game in gamesPlayed:
+                linescore = getLinescore(gameId=game['game_id'])
+                histogram.addLinescore(linescore, homeId=game['home_id'])
+            cache[key] = histogram
+            return histogram
+
+
+        
 class LinescoreHistogram:
     def __init__(self,teamId,teamName="N/A"):
         self.teamId = teamId
@@ -153,45 +194,45 @@ class LinescoreHistogram:
         return f'Team:{self.teamName} Linescore Histogram\n teamId: {self.teamId} \n hits: {self.hits} \n runs: {self.runs} \n hits allowed: {self.hits_allowed} \n runs allowed: {self.runs_allowed} \n total hits: {self.total_hits} \n total runs: {self.total_runs} \n total hits allowed: {self.total_hits_allowed} \n total runs allowed: {self.total_runs_allowed} \n games played: {self.games_played}\n'
 
 
-def diskcache_it(key_prefix="",keys=[]):
-    def decorator_wrapper(func):
-        @functools.wraps(func)
-        def wrapper(*args,**kwargs):
-            cache_key = key_prefix
-            for k in keys:
-                cache_key += "_"+k
+# def diskcache_it(key_prefix="",keys=[]):
+#     def decorator_wrapper(func):
+#         @functools.wraps(func)
+#         def wrapper(*args,**kwargs):
+#             cache_key = key_prefix
+#             for k in keys:
+#                 cache_key += "_"+k
             
-            result = None
-            with diskcache.Cache(CACHE_DIR) as cache:
-                if cache_key in cache:
-                    result = cache[cache_key]['data']
-                else:
-                    result = func(*args,**kwargs)
-                    cache[cache_key]['data'] = result
-            return result
-        return wrapper
-    return decorator_wrapper
+#             result = None
+#             with diskcache.Cache(CACHE_DIR) as cache:
+#                 if cache_key in cache:
+#                     result = cache[cache_key]['data']
+#                 else:
+#                     result = func(*args,**kwargs)
+#                     cache[cache_key]['data'] = result
+#             return result
+#         return wrapper
+#     return decorator_wrapper
 
-@diskcache_it(key_prefix="linescore",keys=["teamId","season"])
-def getLinescoreHistogram(teamId: int, season: int, teamName: str="N/A"):
-    #check if object key in diskcache
-    #if in cache fetch object
-    key = f'linescore_histogram_{teamId}_{season}'
-    #check if object is up to date
-    with diskcache.Cache(CACHE_DIR) as cache:
-        if key in cache:
-            linescoreHistogram = cache[key]
-            return linescoreHistogram
-        else:
-            #get games played for teamId and season
-            #grab gameId's 
-            #use gameIds to get linescores
-            #store games and gameIds in cache?
-            pass
-    #if not up to date grab games played after last date in object
-    #grab linescores for each game played ``
-    #update object for each linescore
-    return None
+
+#store games
+#store linescores for games
+
+@dataclass
+class Game:
+    gameId: int
+    data: dict
+
+@dataclass
+class Linescore:
+    game: Game
+    linescoreData: dict
+    
+@dataclass
+class GamesPlayed:
+    teamId: int
+    season: int
+    games: list
+
 
 def clearGamesPlayed(teamId: int, season: int):
     """

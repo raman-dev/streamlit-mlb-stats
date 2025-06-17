@@ -161,6 +161,7 @@ st.selectbox(
 
 results = server.getGamesPlayed(teamId=st.session_state['team']['id'],
                                 season=2025)
+
 # results = statsapi.schedule(team=st.session_state['team']['id'],
 #                             season=2025,
 #                             end_date=today_str,
@@ -173,7 +174,7 @@ results = server.getGamesPlayed(teamId=st.session_state['team']['id'],
 testGameId = 777917
 testHomeId = 133
 testAwayId = 119
-def gamesPlayed(results):
+def showGamesPlayed(results):
     data = []
     global testGameId
     for game in results:
@@ -183,8 +184,8 @@ def gamesPlayed(results):
         date = game['game_date']
         home = game['home_name']
         away = game['away_name']
-        away_runs = game['away_score']
-        home_runs = game['home_score']
+        away_runs = int(game['away_score'])
+        home_runs = int(game['home_score'])
     
     # x = statsapi.get("game_linescore",params={
     #     'gamePk':id
@@ -201,24 +202,24 @@ def gamesPlayed(results):
     st.table(data)
 
 
-@st.cache_data
-def getLinescore(gameId):
-    return statsapi.get("game_linescore",params={
-    'gamePk':gameId
-    })
-
-linescore = getLinescore(testGameId)
-st.write(linescore)
-linescoreHistogram = server.LinescoreHistogram(teamId=st.session_state['team']['id'],teamName="Athletics")
-linescoreHistogram.addLinescore(linescore=linescore,homeId=testHomeId)
+# linescore = server.getLinescore(testGameId)
+# # st.write(linescore)
+# linescoreHistogram = server.LinescoreHistogram(teamId=st.session_state['team']['id'],teamName="N/A")
+# linescoreHistogram.addLinescore(linescore=linescore,homeId=testHomeId)
+linescoreHistogram = server.getLinescoreHistogram(teamId=st.session_state['team']['id'],season=SEASON)
 st.write(linescoreHistogram)
 #filter to home {
 #   hits:[x,x,x,x...]
 #   runs:[x,x,x,x...]   
 #}
 
+def updateLinescoreHistogram():
+    for nameData in teamIds:
+        name,id = nameData.values()
+        st.write(name,id)
+        linescoreHistogram = server.getLinescoreHistogram(teamId=id,season=SEASON)
 
-# gamesPlayed(results)
+showGamesPlayed(results)
 
 """
     show a bar graph of hits for every inning
@@ -232,3 +233,15 @@ st.write(linescoreHistogram)
 # df = pd.DataFrame(data={"hits per inning":hits,"runs per inning":runs})
 # st.subheader("Hits/Runs Per Inning")
 # st.bar_chart(data=df,color=["#fd0","#f0f"])
+
+def updateGamesPlayed():
+# st.write(teamIds)
+# fetch games played for each team
+# and update cache if necessary
+    for data in teamIds:
+        # st.write(data)
+        id,name = data.values()
+        st.write(name,id)
+        server.getGamesPlayed(teamId=id,season=2025)
+
+
