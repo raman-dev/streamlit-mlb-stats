@@ -101,8 +101,9 @@ def showTeamsWithStats():
         name = d['name']
         # id = d['id']
 
-        
-        teamStanding = teamStandingDict[id]
+        # st.write(name,id)
+        # print(type(id))
+        teamStanding = teamStandingDict[int(id)]
         
         hittingStats = get_stats('hitting',['hits','rbi','gamesPlayed'],id)
         pitchingStats = get_stats('pitching',['hits','runs'],id)
