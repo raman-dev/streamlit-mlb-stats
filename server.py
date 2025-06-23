@@ -91,6 +91,7 @@ def getLinescoreHistogram(teamId: int, season: int,teamName: str = "N/A"):
             histogram = LinescoreHistogram(teamId=teamId, teamName=teamName)
             
             for gp in gamesPlayed:
+                
                 linescore = getLinescore(gameId=gp['game_id'])
                 histogram.addLinescore(linescore, homeId=gp['home_id'])
             
@@ -298,12 +299,14 @@ def getGamesPlayed(teamId: int,season: int):
             stored = cache[key]
             if stored['endDate'] < currentDate: #dates are strings
                 # query statsapi for games played from stored enddate to today
+                print('Updating cache for', key)
                 endDatePlusOne = datetime.strptime(stored['endDate'], '%m/%d/%Y') + timedelta(days=1)
                 result = statsapi.schedule(
                         team=teamId,
                         season=season,
                         start_date=endDatePlusOne.strftime('%m/%d/%Y'),
                         end_date=currentDate)
+                result = list(filter(lambda x: int(x['home_score']) != 0 or int(x['away_score']) != 0, result))
                 stored['data'] += result
                 stored['endDate'] = currentDate
                 cache[key] = stored
@@ -312,15 +315,19 @@ def getGamesPlayed(teamId: int,season: int):
             else:
                 # return the data from diskcache
                 print('Returning cached data for', key)
-                return stored['data']
+                return list(filter(lambda x: int(x['home_score']) != 0 or int(x['away_score']) != 0, stored['data'])) 
         else:
             print('Fetching from statsapi',key)
             # query statsapi for games played from startDate to today
-            result = statsapi.schedule(
-                        team=teamId,
-                        season=season,
-                        start_date=startDate,
-                        end_date=currentDate)
+            result = list(
+                        filter(lambda x: int(x['home_score']) != 0 or int(x['away_score']) != 0, 
+                        statsapi.schedule(
+                            team=teamId,
+                            season=season,
+                            start_date=startDate,
+                            end_date=currentDate)
+                        )
+                    )
             stored = {
                 'data': result,
                 'endDate': currentDate

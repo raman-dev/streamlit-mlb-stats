@@ -135,7 +135,12 @@ showTeamsWithStats()
 """
 `{t["w"]}`
 
+logo_api
 """
+
+def logoUrl(teamId):
+    return LOGO_API_URL + f"/{teamId}.svg"
+LOGO_API_URL= "https://www.mlbstatic.com/team-logos/team-cap-on-dark"
 
 
 
@@ -214,7 +219,7 @@ def showSavedLinescoreHistograms():
         # for k in keys:
         #     st.write(k)
 
-showSavedLinescoreHistograms()
+# showSavedLinescoreHistograms()
 # removeAllLinescoreHistogramsFromCache()
 def createLinescoreHistograms():
     for teamId in teamIdsDict:
@@ -228,22 +233,131 @@ def createLinescoreHistograms():
 
 
 # createLinescoreHistograms()
-linescoreHistogram = server.getLinescoreHistogram(teamId=st.session_state['team']['id'],
-                                                  season=SEASON,
-                                                  teamName=st.session_state['team']['name'])
-linescoreHistogram.calculateAverages()
+# linescoreHistogram = server.getLinescoreHistogram(teamId=st.session_state['team']['id'],
+#                                                   season=SEASON,
+#                                                   teamName=st.session_state['team']['name'])
+# linescoreHistogram.calculateAverages()
 
-with diskcache.Cache(server.CACHE_DIR) as cache:
-    cache.set(f'linescore_histogram_{st.session_state["team"]["id"]}_{SEASON}',linescoreHistogram)
-st.write(linescoreHistogram)
+# with diskcache.Cache(server.CACHE_DIR) as cache:
+#     cache.set(f'linescore_histogram_{st.session_state["team"]["id"]}_{SEASON}',linescoreHistogram)
+# st.write(linescoreHistogram)
 """
     show a bar graph of hits for every inning
 """
 
-columns = ["hits per inning","runs per inning"]
-df = pd.DataFrame(data={"hits per inning":linescoreHistogram.averages['hits'],
-                        "runs per inning":linescoreHistogram.averages['runs']})
-st.subheader("Total Hits:Total Runs, Per Inning")
-st.bar_chart(data=df,color=["#fd0","#f0f"])
+# columns = ["hits per inning","runs per inning"]
+# df = pd.DataFrame(data={"hits per inning":linescoreHistogram.averages['hits'],
+#                         "runs per inning":linescoreHistogram.averages['runs']})
+# st.subheader("Total Hits:Total Runs, Per Inning")
+# st.bar_chart(data=df,color=["#fd0","#f0f"])
+# updateGamesPlayed()
 
+def getLinescores():
+    with diskcache.Cache(server.CACHE_DIR) as cache:
+        keys = list(filter(lambda x: 'linescore' in x, list(cache.iterkeys())))
+        linescores = []
+        for k in keys:
+            linescores.append(cache.get(k))
+        return linescores
+    
+def showCacheKeys():
+    cacheKeys = {}
+    with diskcache.Cache(server.CACHE_DIR) as cache:
+        keys = list(cache.iterkeys())
+        linescoreKeys = filter(lambda x: 'linescore' in x, keys)
+        # st.write('Linescore Keys:',list(linescoreKeys))
+        cacheKeys['linescores'] = list(linescoreKeys)
+        cacheKeys['games_played'] = list(filter(lambda x: 'games_played' in x, keys))
+    st.write('Cache Keys:',cacheKeys)
+
+# showCacheKeys()
+def removeZeroScoreFilter(gp: dict):
+
+    if  not'home_score' in gp or not 'away_score' in gp:
+        print('No score available for game: ',gp['game_id'])
+        return False
+
+    a = int(gp['home_score'])
+    b = int(gp['away_score'])
+    bothZero = a == 0 and b == 0
+    if bothZero:
+        print('Game with zero score: ',gp['game_id'])
+        return False
+    return True
+
+# @st.cache_data
+def getLinescoreStats(linescore: dict,isHomeTeam: bool):
+    hits = 0
+    runs = 0
+    hits_allowed = 0
+    runs_allowed = 0
+
+    myKey = "home" if isHomeTeam else "away"    
+    otherKey = "away" if isHomeTeam else "home"
+
+    runs = linescore["teams"][myKey]["runs"]
+    hits = linescore["teams"][myKey]["hits"]
+
+    runs_allowed = linescore["teams"][otherKey]["runs"]
+    hits_allowed = linescore["teams"][otherKey]["hits"]
+
+    return {"runs":runs,"hits":hits,"runs_allowed":runs_allowed,"hits_allowed":hits_allowed}
+
+def showGamesPlayed(teamId: int):
+    result = server.getGamesPlayed(teamId=st.session_state['team']['id'],season=2025)
+    # st.write(result)
+    result = filter(removeZeroScoreFilter, result)
+    columns = ["Result","Opponent","Opponent Score","Scored","hits","runs","hits_allowed","runs_allowed","Date"]
+    
+
+    @st.cache_data
+    def gls(gameId:int):
+        return server.getLinescore(gameId=gameId)
+    table = []
+    for gp in result:
+        
+        isHomeTeam = teamId == gp['home_id']
+
+        score = gp['away_score']
+
+        opponentScore = gp['home_score']
+        opponentTeam = gp["home_name"]
+
+        awaySuffix = " :blue-background[Away]"
+        if isHomeTeam:
+            score = gp['home_score']
+            opponentTeam = gp["away_name"] 
+            opponentScore = gp["away_score"]
+            awaySuffix = ""    
+
+        wonGame = False
+        if isHomeTeam:
+            if gp["home_score"] > gp["away_score"]:
+                wonGame = True
+        else:
+            if gp["away_score"] > gp["home_score"]:
+                wonGame = True
+
+        row = {
+            # gp['game_id'],
+            "Result":(':green-background[W]' if wonGame else ':red-background[L]') + awaySuffix,
+            "Opponent":opponentTeam,
+            "Opponent Score":int(opponentScore),
+            "Scored": int(score),
+            "Date": gp['game_date']
+        }
+        linescore = gls(gp['game_id'])
+        # st.write(linescore)
+        linescoreStats = getLinescoreStats(linescore,isHomeTeam=isHomeTeam)
+        
+        #map function? or reduce function?
+        table.append(row | linescoreStats)#merge dicts
+        # break
+    df = pd.DataFrame(data=table,columns=columns)
+    st.dataframe(df,hide_index=True)
+    # st.table(df)
+
+showGamesPlayed(teamId=st.session_state['team']['id'])
+# content = [st.badge("Home", color="blue")]
+# st.write(content)
 
