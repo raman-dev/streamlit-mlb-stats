@@ -7,6 +7,7 @@ import numpy as np
 import server
 
 import diskcache
+import altair as alt
 
 SEASON=2025
 
@@ -303,11 +304,45 @@ def getLinescoreStats(linescore: dict,isHomeTeam: bool):
 
     return {"runs":runs,"hits":hits,"runs_allowed":runs_allowed,"hits_allowed":hits_allowed}
 
+
+def showGraph(df: pd.DataFrame):
+    #do what show hits for now 
+    hits_line = (
+        alt.Chart(df)
+        .mark_line()
+        .encode(
+            alt.X("Date:O"),
+            alt.Y('hits:Q'),
+        )
+    )
+
+    hits_allowed_line = (
+        alt.Chart(df)
+        .mark_line()
+        .encode(
+            alt.X("Date:O"),
+            alt.Y('hits_allowed:Q'),
+        )
+    )
+
+    points = (
+        alt.Chart(df)
+        .mark_point(size=100)
+        .encode(
+            alt.X("Date:N"),
+            alt.Y('hits:Q'),
+            color='isHomeGame:O'
+            # tooltip=points_tooltip,
+        )
+    )
+
+    st.altair_chart(hits_line + points, use_container_width=True)           
+
 def showGamesPlayed(teamId: int):
     result = server.getGamesPlayed(teamId=st.session_state['team']['id'],season=2025)
     # st.write(result)
     result = filter(removeZeroScoreFilter, result)
-    columns = ["Result","Opponent","Opponent Score","Scored","hits","runs","hits_allowed","runs_allowed","Date"]
+    columns = ["Result","Opponent","Opponent Score","Scored","hits","runs","hits_allowed","runs_allowed","Date","isHomeGame"]
     
 
     @st.cache_data
@@ -322,12 +357,16 @@ def showGamesPlayed(teamId: int):
 
         opponentScore = gp['home_score']
         opponentTeam = gp["home_name"]
+        opponentId = gp['home_id']
 
         awaySuffix = " :blue-background[Away]"
         if isHomeTeam:
             score = gp['home_score']
+            
+            opponentId = gp['away_id']
             opponentTeam = gp["away_name"] 
             opponentScore = gp["away_score"]
+
             awaySuffix = ""    
 
         wonGame = False
@@ -340,6 +379,7 @@ def showGamesPlayed(teamId: int):
 
         row = {
             # gp['game_id'],
+            "isHomeGame": str(isHomeTeam),
             "Result":(':green-background[W]' if wonGame else ':red-background[L]') + awaySuffix,
             "Opponent":opponentTeam,
             "Opponent Score":int(opponentScore),
@@ -354,8 +394,9 @@ def showGamesPlayed(teamId: int):
         table.append(row | linescoreStats)#merge dicts
         # break
     df = pd.DataFrame(data=table,columns=columns)
-    st.dataframe(df,hide_index=True)
-    # st.table(df)
+    showGraph(df)
+    # st.dataframe(df,hide_index=True)
+    st.table(df)
 
 showGamesPlayed(teamId=st.session_state['team']['id'])
 # content = [st.badge("Home", color="blue")]
