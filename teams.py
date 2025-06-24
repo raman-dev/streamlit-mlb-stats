@@ -56,6 +56,8 @@ def writeTeamIds():
 
 # teamIds = getTeamIds()
 teamIdsDict = getTeamIds()
+teamNames = [team['name'] for team in teamIdsDict.values()]
+st.session_state["teamNames"] = teamNames
 
 @st.cache_data
 def getStatDict(statGroup,teamId):
@@ -304,40 +306,123 @@ def getLinescoreStats(linescore: dict,isHomeTeam: bool):
 
     return {"runs":runs,"hits":hits,"runs_allowed":runs_allowed,"hits_allowed":hits_allowed}
 
+def altLine(df: pd.DataFrame):
+    return alt.Chart(df).mark_line()
+    
 
 def showGraph(df: pd.DataFrame):
     #do what show hits for now 
     hits_line = (
-        alt.Chart(df)
-        .mark_line()
+        alt.Chart(df).mark_line()
         .encode(
             alt.X("Date:O"),
-            alt.Y('hits:Q'),
+            alt.Y('hits:Q')
         )
     )
 
-    hits_allowed_line = (
-        alt.Chart(df)
-        .mark_line()
+    hits_bar = (
+        alt.Chart(df).mark_bar()
         .encode(
             alt.X("Date:O"),
-            alt.Y('hits_allowed:Q'),
+            alt.Y('hits:Q')
         )
+    )
+    
+    
+    custom_colors = [
+        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
+        '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+        '#aec7e8', '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5',
+        '#c49c94', '#f7b6d2', '#c7c7c7', '#dbdb8d', '#9edae5',
+        '#393b79', '#637939', '#8c6d31', '#843c39', '#7b4173',
+        '#5254a3', '#6b6ecf', '#9c9ede', '#17becf', '#e7ba52'
+    ]
+    
+    #the extra bracket wraps are necessary so i can split calls into multiple lines
+    hits_allowed_bar = (
+        alt.Chart(df)
+        .mark_bar(width=7)
+        .encode(
+            alt.X("Date:N",sort='-y'), 
+            alt.Y("hits_allowed:Q"),
+            color = alt.Color(
+            'Opponent:N',
+             scale=alt.Scale(
+                domain=teamNames,
+                range=custom_colors
+                )  
+            )
+        )
+    )
+
+    avg_ha_line = (
+        alt.Chart(df)
+        .mark_rule(color="cyan", strokeDash=[5, 5], strokeWidth=2)
+        .encode(y='mean(hits_allowed):Q')
     )
 
     points = (
         alt.Chart(df)
-        .mark_point(size=100)
+        .mark_point(size=100,filled=True)
         .encode(
             alt.X("Date:N"),
             alt.Y('hits:Q'),
-            color='isHomeGame:O'
+            # color='isHomeGame:N'
+            color = alt.Color(
+            'isHomeGame:N',
+             scale=alt.Scale(
+                 domain=['Home', 'Away'], 
+                 range=['blue', 'red'])  
+            )
             # tooltip=points_tooltip,
         )
     )
 
-    st.altair_chart(hits_line + points, use_container_width=True)           
+    avg_line = (
+        alt.Chart(df)
+        .mark_rule(color="cyan", strokeDash=[5, 5], strokeWidth=2)
+        .encode(y='mean(hits):Q')
+    )
 
+    hits_bar = (
+        alt.Chart(df)
+        .mark_bar(width=7)
+        .encode(
+            alt.X("Date:N",sort='-y'), 
+            alt.Y("hits:Q"),
+            color = alt.Color(
+            'Opponent:N',
+             scale=alt.Scale(
+                domain=teamNames,
+                range=custom_colors
+            )  
+            )
+        )
+    )
+
+    st.altair_chart(avg_line + hits_bar, use_container_width=True)           
+    st.altair_chart(avg_ha_line + hits_allowed_bar, use_container_width=True)           
+
+
+@st.fragment
+def showTable(df: pd.DataFrame):
+    options = ["table","dataframe"]
+    #option
+    selection = st.pills(
+        "Table Type",
+        default=options[0],
+        options=options,
+        selection_mode="single",
+        format_func= lambda x : x.title(),
+        key="tableType"
+    )
+
+    if st.session_state['tableType'] == "table":
+        st.table(df)
+    else:
+        st.dataframe(df,hide_index=True)
+
+@st.fragment
 def showGamesPlayed(teamId: int):
     result = server.getGamesPlayed(teamId=st.session_state['team']['id'],season=2025)
     # st.write(result)
@@ -379,7 +464,7 @@ def showGamesPlayed(teamId: int):
 
         row = {
             # gp['game_id'],
-            "isHomeGame": str(isHomeTeam),
+            "isHomeGame": "Home" if isHomeTeam else "Away",
             "Result":(':green-background[W]' if wonGame else ':red-background[L]') + awaySuffix,
             "Opponent":opponentTeam,
             "Opponent Score":int(opponentScore),
@@ -395,8 +480,9 @@ def showGamesPlayed(teamId: int):
         # break
     df = pd.DataFrame(data=table,columns=columns)
     showGraph(df)
+    showTable(df)
     # st.dataframe(df,hide_index=True)
-    st.table(df)
+    # st.table(df)
 
 showGamesPlayed(teamId=st.session_state['team']['id'])
 # content = [st.badge("Home", color="blue")]
