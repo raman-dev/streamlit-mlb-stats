@@ -343,7 +343,7 @@ def showGraph(df: pd.DataFrame):
         alt.Chart(df)
         .mark_bar(width=7)
         .encode(
-            alt.X("Date:N",sort='-y'), 
+            alt.X("Date:N"), 
             alt.Y("hits_allowed:Q"),
             color = alt.Color(
             'Opponent:N',
@@ -388,7 +388,7 @@ def showGraph(df: pd.DataFrame):
         alt.Chart(df)
         .mark_bar(width=7)
         .encode(
-            alt.X("Date:N",sort='-y'), 
+            alt.X("Date:N"), 
             alt.Y("hits:Q"),
             color = alt.Color(
             'Opponent:N',
