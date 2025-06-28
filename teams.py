@@ -298,6 +298,10 @@ def getLinescoreStats(linescore: dict,isHomeTeam: bool):
     myKey = "home" if isHomeTeam else "away"    
     otherKey = "away" if isHomeTeam else "home"
 
+    if not "runs" in linescore["teams"][myKey]:
+        print("Cannot get runs for this linescore => ",linescore)
+        return
+
     runs = linescore["teams"][myKey]["runs"]
     hits = linescore["teams"][myKey]["hits"]
 
@@ -452,10 +456,14 @@ def showGamesPlayed(teamId: int):
             "Scored": int(score),
             "Date": gp['game_date']
         }
+        if score == 0 and opponentScore == 0:
+            continue
         linescore = gls(gp['game_id'])
         # st.write(linescore)
         linescoreStats = getLinescoreStats(linescore,isHomeTeam=isHomeTeam)
-        
+        if not linescoreStats:
+            print("Error with => ",gp['game_id'])
+            continue
         #map function? or reduce function?
         table.append(row | linescoreStats)#merge dicts
         # break
