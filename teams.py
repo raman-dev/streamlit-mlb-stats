@@ -472,6 +472,8 @@ def showGamesPlayed(teamId: int):
             "Scored": int(score),
             "Date": gp['game_date']
         }
+        if score == 0 and opponentScore == 0:
+            continue
         linescore = gls(gp['game_id'])
         # st.write(linescore)
         linescoreStats = getLinescoreStats(linescore,isHomeTeam=isHomeTeam)
