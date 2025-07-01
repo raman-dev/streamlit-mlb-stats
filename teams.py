@@ -273,7 +273,24 @@ def showCacheKeys():
         cacheKeys['games_played'] = list(filter(lambda x: 'games_played' in x, keys))
     st.write('Cache Keys:',cacheKeys)
 
-# showCacheKeys()
+@st.cache_data
+def getCacheLinescore(gameId:int):
+    with diskcache.Cache(server.CACHE_DIR) as cache:
+        key = f'linescore_{gameId}'
+        if key in cache:
+            return cache.get(key)
+        else:
+            print('No linescore found for game:',gameId)
+            return None
+
+def removeCacheLinescore(gameId:int):
+    with diskcache.Cache(server.CACHE_DIR) as cache:
+        key = f'linescore_{gameId}'
+        if key not in cache:
+            print('No linescore found for game:',gameId)
+            return 
+        cache.pop(key,None)
+
 def removeZeroScoreFilter(gp: dict):
 
     if  not'home_score' in gp or not 'away_score' in gp:
@@ -298,6 +315,11 @@ def getLinescoreStats(linescore: dict,isHomeTeam: bool):
     myKey = "home" if isHomeTeam else "away"    
     otherKey = "away" if isHomeTeam else "home"
 
+    if "runs" not in linescore["teams"][myKey] or "hits" not in linescore["teams"][myKey]:
+        print('No runs or hits in linescore for team:',myKey)
+        print(json.dumps(linescore, indent=4))
+        return
+
     runs = linescore["teams"][myKey]["runs"]
     hits = linescore["teams"][myKey]["hits"]
 
@@ -306,8 +328,6 @@ def getLinescoreStats(linescore: dict,isHomeTeam: bool):
 
     return {"runs":runs,"hits":hits,"runs_allowed":runs_allowed,"hits_allowed":hits_allowed}
 
-def altLine(df: pd.DataFrame):
-    return alt.Chart(df).mark_line()
     
 custom_colors = [
     '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
@@ -455,7 +475,10 @@ def showGamesPlayed(teamId: int):
         linescore = gls(gp['game_id'])
         # st.write(linescore)
         linescoreStats = getLinescoreStats(linescore,isHomeTeam=isHomeTeam)
-        
+        if linescoreStats is None:
+            
+            print('No linescore stats for game:',gp['game_id'])
+            continue
         #map function? or reduce function?
         table.append(row | linescoreStats)#merge dicts
         # break
@@ -468,4 +491,7 @@ def showGamesPlayed(teamId: int):
 showGamesPlayed(teamId=st.session_state['team']['id'])
 # content = [st.badge("Home", color="blue")]
 # st.write(content)
-
+# corruptGameId = 777457
+# st.write(getCacheLinescore(gameId=corruptGameId))
+# removeCacheLinescore(gameId=corruptGameId)
+# st.write(getCacheLinescore(gameId=corruptGameId))

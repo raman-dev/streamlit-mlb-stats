@@ -307,6 +307,7 @@ def getGamesPlayed(teamId: int,season: int):
                         start_date=endDatePlusOne.strftime('%m/%d/%Y'),
                         end_date=currentDate)
                 result = list(filter(lambda x: int(x['home_score']) != 0 or int(x['away_score']) != 0, result))
+                print(json.dumps(result, indent=4))
                 stored['data'] += result
                 stored['endDate'] = currentDate
                 cache[key] = stored
