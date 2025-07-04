@@ -127,6 +127,17 @@ def showTeamsWithStats():
     df = pd.DataFrame(data=table,columns=columns)
     st.dataframe(df,hide_index=True)
 
+
+def pitchingData():
+    testGameId = 777308
+    """
+        Get pitching data for a game
+    """
+    boxscoreData = statsapi.boxscore_data(gamePk=testGameId)
+    st.write(boxscoreData)
+
+pitchingData()
+
 showTeamsWithStats()
 # leagueLeaderTypes = statsapi.meta('leagueLeaderTypes')
 # st.selectbox(
@@ -340,7 +351,7 @@ custom_colors = [
 
 @st.fragment
 def showGraph(df: pd.DataFrame):
-    options = ["sort","date"]
+    options = ["sort","date" ,"team"]
     #option
     selection = st.pills(
         "Graph Sort",
@@ -355,6 +366,11 @@ def showGraph(df: pd.DataFrame):
     xDateAxis = alt.X("Date:N")
     if st.session_state["sortGraph"] == "sort":
         xDateAxis = alt.X("Date:N",sort="-y")
+    elif st.session_state["sortGraph"] == "team":
+        xDateAxis = alt.X("Date:N",sort=alt.SortField(
+            field="Opponent",
+            order="descending"
+        ))
 
     hits_allowed_bar = (
         alt.Chart(df)
@@ -427,7 +443,7 @@ def showTable(df: pd.DataFrame):
 def showGamesPlayed(teamId: int):
     result = server.getGamesPlayed(teamId=st.session_state['team']['id'],season=2025)
     # st.write(result)
-    result = filter(removeZeroScoreFilter, result)
+    result = filter(server.gamePlayedFilter, result)
     columns = ["Result","Opponent","Opponent Score","Scored","hits","runs","hits_allowed","runs_allowed","Date","isHomeGame"]
     
 

@@ -272,6 +272,10 @@ def clearGamesPlayed(teamId: int, season: int):
         # del cache[key]
     return True
 
+def gamePlayedFilter(game: dict):
+    #make sure that at least one of the scores is not zero and the status is 'Final'
+    return (int(game['home_score']) != 0 or int(game['away_score']) != 0) and game['status'] == 'Final'
+
 def getGamesPlayed(teamId: int,season: int):
     if type(teamId) != int:
         print('teamId is not an int:', teamId)
@@ -306,7 +310,7 @@ def getGamesPlayed(teamId: int,season: int):
                         season=season,
                         start_date=endDatePlusOne.strftime('%m/%d/%Y'),
                         end_date=currentDate)
-                result = list(filter(lambda x: int(x['home_score']) != 0 or int(x['away_score']) != 0, result))
+                result = list(filter(gamePlayedFilter, result))
                 print(json.dumps(result, indent=4))
                 stored['data'] += result
                 stored['endDate'] = currentDate
@@ -316,12 +320,12 @@ def getGamesPlayed(teamId: int,season: int):
             else:
                 # return the data from diskcache
                 print('Returning cached data for', key)
-                return list(filter(lambda x: int(x['home_score']) != 0 or int(x['away_score']) != 0, stored['data'])) 
+                return list(filter(gamePlayedFilter, stored['data'])) 
         else:
             print('Fetching from statsapi',key)
             # query statsapi for games played from startDate to today
             result = list(
-                        filter(lambda x: int(x['home_score']) != 0 or int(x['away_score']) != 0, 
+                        filter(gamePlayedFilter, 
                         statsapi.schedule(
                             team=teamId,
                             season=season,
