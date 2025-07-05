@@ -136,7 +136,7 @@ def pitchingData():
     boxscoreData = statsapi.boxscore_data(gamePk=testGameId)
     st.write(boxscoreData)
 
-pitchingData()
+# pitchingData()
 
 showTeamsWithStats()
 # leagueLeaderTypes = statsapi.meta('leagueLeaderTypes')
