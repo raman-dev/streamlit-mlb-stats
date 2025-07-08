@@ -17,43 +17,6 @@ CACHE_DIR = "statsapi_cache"
     need per game hits, at bats, runs
 """
 
-@dataclass
-class GamesPlayedData:
-    teamId: int
-    season: int
-    games: list
-    """
-    list of what objects
-        {
-            runs_scored: int
-            runs_allowed: int
-            hits: int
-            hits_allowed: int
-            gameWon: bool
-            errors: int
-            date: str
-            gameId: int
-        }
-    """
-    def addGame(self,gameData):
-        game = {}
-        isHomeTeam = gameData['home_id'] == self.teamId
-        game['gameId'] = gameData['game_id']
-        game['date'] = gameData['game_date']
-
-        if isHomeTeam:
-            game['runs_scored'] = gameData['home_score']
-            game['runs_allowed'] = gameData['away_score']
-            game['hits'] = gameData['home_hits']
-            game['hits_allowed'] = gameData['away_hits']
-        else:
-            game['runs_scored'] = gameData['away_score']
-            game['runs_allowed'] = gameData['home_score']
-            game['hits'] = gameData['away_hits']
-            game['hits_allowed'] = gameData['home_hits']
-
-        game['gameWon'] = game['runs_scored'] > game['runs_allowed']
-
 
 def getLinescore(gameId: int):
     """
