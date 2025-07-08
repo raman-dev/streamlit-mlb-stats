@@ -58,7 +58,7 @@ def writeTeamIds():
 teamIdsDict = getTeamIds()
 teamNames = [team['name'] for team in teamIdsDict.values()]
 st.session_state["teamNames"] = teamNames
-
+# st.write(teamIdsDict)
 @st.cache_data
 def getStatDict(statGroup,teamId):
     return statsapi.get("team_stats",
@@ -139,13 +139,6 @@ def pitchingData():
 # pitchingData()
 
 showTeamsWithStats()
-# leagueLeaderTypes = statsapi.meta('leagueLeaderTypes')
-# st.selectbox(
-#     "League Leader Types",
-#      leagueLeaderTypes,
-#      key='leagueLeaderTypes',
-#      format_func=lambda x: x['displayName'].title()
-# )
 """
 `{t["w"]}`
 
@@ -191,20 +184,7 @@ st.selectbox(
 #               'teamId':st.session_state['team']['id'],
 #               'season':2025})
 
-#filter to home {
-#   hits:[x,x,x,x...]
-#   runs:[x,x,x,x...]   
-#}
-
-def updateLinescoreHistogram():
-    for id,nameData in teamIdsDict.items():
-        name = nameData['name']
-        st.write(name,id)
-        linescoreHistogram = server.getLinescoreHistogram(teamId=id,season=SEASON)
-
 # showGamesPlayed(results)
-
-
 
 def updateGamesPlayed():
 # st.write(teamIds)
@@ -216,45 +196,7 @@ def updateGamesPlayed():
         st.write(name,id)
         server.getGamesPlayed(teamId=id,season=2025)
 
-def removeAllLinescoreHistogramsFromCache():
-    with diskcache.Cache(server.CACHE_DIR) as cache:
-        #remove histogram from cache
-        keys = list(filter(lambda x: 'linescore_histogram' in x,list(cache.iterkeys())))
-        st.write('Deleting => ',keys)
-        for k in keys:
-            cache.pop(k)
 
-# st.write(teamIdsDict)
-
-def showSavedLinescoreHistograms():
-    with diskcache.Cache(server.CACHE_DIR) as cache:
-        keys = list(filter(lambda x: 'linescore_histogram' in x,list(cache.iterkeys())))
-        st.write('Saved Linescore Histograms:',keys)
-        # for k in keys:
-        #     st.write(k)
-
-# showSavedLinescoreHistograms()
-# removeAllLinescoreHistogramsFromCache()
-def createLinescoreHistograms():
-    for teamId in teamIdsDict:
-
-        teamName = teamIdsDict[teamId]['name']
-        st.write(teamName,teamId)
-
-        linescoreHistogram = server.getLinescoreHistogram(teamId=teamId,season=SEASON,teamName=teamName)
-        st.write(linescoreHistogram)
-        break
-
-
-# createLinescoreHistograms()
-# linescoreHistogram = server.getLinescoreHistogram(teamId=st.session_state['team']['id'],
-#                                                   season=SEASON,
-#                                                   teamName=st.session_state['team']['name'])
-# linescoreHistogram.calculateAverages()
-
-# with diskcache.Cache(server.CACHE_DIR) as cache:
-#     cache.set(f'linescore_histogram_{st.session_state["team"]["id"]}_{SEASON}',linescoreHistogram)
-# st.write(linescoreHistogram)
 """
     show a bar graph of hits for every inning
 """
@@ -280,9 +222,18 @@ def showCacheKeys():
         keys = list(cache.iterkeys())
         linescoreKeys = filter(lambda x: 'linescore' in x, keys)
         # st.write('Linescore Keys:',list(linescoreKeys))
-        cacheKeys['linescores'] = list(linescoreKeys)
-        cacheKeys['games_played'] = list(filter(lambda x: 'games_played' in x, keys))
+        # cacheKeys['linescores'] = list(linescoreKeys)
+        # cacheKeys['games_played'] = list(filter(lambda x: 'games_played' in x, keys))
+        # cacheKeys['game_data'] = list(filter(lambda x: 'game_data' in x,keys))
+        cacheKeys['teamGameContainers']  = list(filter(lambda x:'team_game_container' in x,keys))
     st.write('Cache Keys:',cacheKeys)
+
+
+
+showCacheKeys()
+# tgd = "team_game_container_108_2025"
+# with diskcache.Cache(server.CACHE_DIR) as cache:
+#     st.write(cache[tgd])
 
 @st.cache_data
 def getCacheLinescore(gameId:int):
@@ -506,10 +457,6 @@ def showGamesPlayed(teamId: int):
     # st.dataframe(df,hide_index=True)
     # st.table(df)
 
-showGamesPlayed(teamId=st.session_state['team']['id'])
-# content = [st.badge("Home", color="blue")]
-# st.write(content)
-# corruptGameId = 777457
-# st.write(getCacheLinescore(gameId=corruptGameId))
-# removeCacheLinescore(gameId=corruptGameId)
-# st.write(getCacheLinescore(gameId=corruptGameId))
+# showGamesPlayed(teamId=st.session_state['team']['id'])
+
+server.aggregateGameDataAndLinescore()
