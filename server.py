@@ -92,6 +92,62 @@ class TeamGameContainer:
     season: int
     playedGameIds: list#list of game ids
 
+
+@dataclass
+class TeamGameContainer2:
+    teamId: int
+    season: int
+    playedGameIds: list#list of game ids
+    
+    mostRecentDate: datetime.date
+    mostRecentGameId: int
+     
+
+def clearTGC2():
+    """
+        clear the cache for team_game_container2
+    """
+    with diskcache.Cache(CACHE_DIR) as cache:
+        keys = list(cache.iterkeys())
+        teamGameContainer2Keys = filter(lambda x: 'team_game_container2' in x, keys)
+        for tgc2Key in teamGameContainer2Keys:
+            if tgc2Key in cache:
+                cache.pop(tgc2Key)
+                print('Cleared cache for', tgc2Key)
+
+def addDatesToTGC():
+    #for every teamGameContainer in diskcache
+    #grab the latest game date from gameData in diskcache
+    with diskcache.Cache(CACHE_DIR) as cache:
+        keys = list(cache.iterkeys())
+        teamGameContainerKeys = filter(lambda x: 'team_game_container' in x, keys)
+        for tgcKey in teamGameContainerKeys:
+            tgc = cache[tgcKey]
+            tgcKey2 = f"team_game_container2_{tgc.teamId}_{tgc.season}"
+            tgc2 = TeamGameContainer2(
+                teamId=tgc.teamId,
+                season=tgc.season,
+                playedGameIds=tgc.playedGameIds,
+                mostRecentDate=None,
+                mostRecentGameId=None)
+            
+            mostRecentDate = None
+            mostRecentGameId = None
+            for gameId in tgc.playedGameIds:
+                gameDataKey = f"game_data_{gameId}"
+                if gameDataKey in cache:
+                    gameData = cache[gameDataKey]
+                    
+                    print(gameData.gameData['game_date'])
+                    gameDate = datetime.strptime(gameData.gameData['game_date'], '%Y-%m-%d').date()
+                    if not mostRecentDate or gameDate > mostRecentDate:
+                        mostRecentDate = gameDate
+                        mostRecentGameId = gameId
+            tgc2.mostRecentDate = mostRecentDate
+            tgc2.mostRecentGameId = mostRecentGameId
+            cache[tgcKey2] = tgc2
+            print(f"Updated {tgcKey2} with most recent date {mostRecentDate} and game id {mostRecentGameId}")
+
 def aggregateGameDataAndLinescore():
     #do what 
     #for every game id 
@@ -148,6 +204,43 @@ def clearGamesPlayed(teamId: int, season: int):
 def gamePlayedFilter(game: dict):
     #make sure that at least one of the scores is not zero and the status is 'Final'
     return (int(game['home_score']) != 0 or int(game['away_score']) != 0) and game['status'] == 'Final'
+
+
+def updateGamesPlayed(teamId: int, season: int):
+    #grab all games played after today that are completed
+    if type(teamId) != int:
+        print('teamId is not an int:', teamId)
+        return []
+    if type(season) != int:
+        print('season is not an int:', season)
+        return []
+    currentDate = datetime.today().strftime('%m/%d/%Y')
+    startDate = SEASON_START
+
+
+def getGamesPlayed2(teamId: int, season: int):
+    if type(teamId) != int:
+        print('teamId is not an int:', teamId)
+        return []
+    if type(season) != int:
+        print('season is not an int:', season)
+        return []
+    
+    with diskcache.Cache(CACHE_DIR) as cache:
+        #grab teamGameContainer from cache
+        teamGameContainerKey = f"team_game_container_{teamId}_{season}"
+        if teamGameContainerKey in cache:
+            print('Using cached team game container for', teamId, season)
+            teamGameContainer = cache[teamGameContainerKey]
+            #for each game id in teamGameContainer.playedGameIds
+            games = []
+            for gameId in teamGameContainer.playedGameIds:
+                gameDataKey = f"game_data_{gameId}"
+                if gameDataKey in cache:
+                    games.append(cache[gameDataKey])
+            return games
+    return []
+                    
 
 def getGamesPlayed(teamId: int,season: int):
     if type(teamId) != int:

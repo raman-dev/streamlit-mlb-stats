@@ -457,6 +457,8 @@ def showGamesPlayed(teamId: int):
     # st.dataframe(df,hide_index=True)
     # st.table(df)
 
-# showGamesPlayed(teamId=st.session_state['team']['id'])
+showGamesPlayed(teamId=st.session_state['team']['id'])
 
-server.aggregateGameDataAndLinescore()
+# server.aggregateGameDataAndLinescore()
+server.addDatesToTGC()
+# server.clearTGC2()
