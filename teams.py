@@ -230,7 +230,7 @@ def showCacheKeys():
 
 
 
-showCacheKeys()
+# showCacheKeys()
 # tgd = "team_game_container_108_2025"
 # with diskcache.Cache(server.CACHE_DIR) as cache:
 #     st.write(cache[tgd])
