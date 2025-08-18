@@ -139,11 +139,6 @@ def pitchingData():
 # pitchingData()
 
 showTeamsWithStats()
-"""
-`{t["w"]}`
-
-logo_api
-"""
 
 def logoUrl(teamId):
     return LOGO_API_URL + f"/{teamId}.svg"
@@ -159,18 +154,6 @@ def gamesToday(team_id,date):
     if result == []:
         return [[]]
     return result
-"""
-    get the games today for this team
-
-    stats only mean something in reference to others
-    view all 
-"""
-
-# st.write(st.session_state['team'])
-
-#format is mm/dd/yyyy as str
-
-# team_id = st.session_state['team']['id']
 
 st.selectbox(
     "Team",
@@ -196,10 +179,6 @@ def updateGamesPlayed():
         st.write(name,id)
         server.getGamesPlayed(teamId=id,season=2025)
 
-
-"""
-    show a bar graph of hits for every inning
-"""
 
 # columns = ["hits per inning","runs per inning"]
 # df = pd.DataFrame(data={"hits per inning":linescoreHistogram.averages['hits'],
