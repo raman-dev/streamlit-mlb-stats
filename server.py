@@ -308,3 +308,59 @@ def getGamesPlayed(teamId: int,season: int):
         # store the data in diskcache
         # cache[key] = result['dates']
     return []
+
+def getTeams():
+    """Get all MLB teams"""
+    return statsapi.get("teams",params={'sportIds':1,'activeStatus':'Yes'})
+
+def getStatDict(statGroup, teamId):
+    """Get team stats for a specific group and team"""
+    return statsapi.get("team_stats",
+                      params={
+                          'season': SEASON,
+                          'stats': 'season',
+                          'teamId': teamId,
+                          'group': statGroup})['stats'][0]['splits'][0]['stat']
+
+def getStandings(season):
+    """Get standings data for a season"""
+    return statsapi.standings_data(season=season)
+
+def gamesToday(team_id, date):
+    """Get games for a specific team on a specific date"""
+    result = statsapi.schedule(start_date=date,
+                  end_date=date,
+                  team=team_id)
+    if result == []:
+        return [[]]
+    return result
+
+def getTeamRoster(teamId: int, date: str):
+    """Get team roster for a specific team and date"""
+    try:
+        # Get roster data from statsapi
+        roster_data = statsapi.get("team_roster", params={'teamId': teamId, 'date': date})
+        return roster_data
+    except Exception as e:
+        print(f"Error fetching roster for team {teamId}: {e}")
+        return {'roster': []}
+
+def getTeamPitchers(teamId: int, date: str):
+    """Get pitchers from team roster"""
+    roster_data = getTeamRoster(teamId, date)
+    pitchers = []
+    
+    if 'roster' in roster_data:
+        for player in roster_data['roster']:
+            person = player.get('person', {})
+            position = player.get('position', {})
+            
+            # Check if player is a pitcher (position type is 'Pitcher')
+            if position.get('type') == 'Pitcher':
+                pitchers.append({
+                    'id': person.get('id'),
+                    'name': person.get('fullName', 'Unknown'),
+                    'position': position.get('abbreviation', 'P')
+                })
+    
+    return pitchers

@@ -36,4 +36,8 @@ Add a page to view cache as tables -> W
     In app.py add a page to view the diskcache as tables
     WORKED
 
+Refactor to clean teams.py
+----------------------------------------------------
+    Within teams.py move any api calls into server.py
+
 

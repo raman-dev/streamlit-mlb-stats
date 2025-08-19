@@ -1,5 +1,4 @@
 import streamlit as st
-import statsapi
 import json
 from datetime import datetime
 import pandas as pd
@@ -16,7 +15,7 @@ today_str = today.strftime("%m/%d/%Y")
 
 @st.cache_data
 def getTeams():
-    return statsapi.get("teams",params={'sportIds':1,'activeStatus':'Yes'})
+    return server.getTeams()
 
 
 @st.cache_data
@@ -61,12 +60,7 @@ st.session_state["teamNames"] = teamNames
 # st.write(teamIdsDict)
 @st.cache_data
 def getStatDict(statGroup,teamId):
-    return statsapi.get("team_stats",
-                      params={
-                          'season':SEASON,
-                          'stats':'season',
-                          'teamId':teamId,
-                          'group':statGroup})['stats'][0]['splits'][0]['stat']
+    return server.getStatDict(statGroup, teamId)
 
 
 def get_stats(statGroup,statNames,teamId):
@@ -81,7 +75,7 @@ def showTeamsWithStats():
         write as table
     """
     table = []
-    standings = statsapi.standings_data(season=SEASON)
+    standings = server.getStandings(season=SEASON)
     # st.write(standings)
     # """
         # standings -> {
@@ -138,12 +132,7 @@ LOGO_API_URL= "https://www.mlbstatic.com/team-logos/team-cap-on-dark"
 
 @st.cache_data
 def gamesToday(team_id,date):
-    result = statsapi.schedule(start_date=date,
-                  end_date=date,
-                  team=team_id)
-    if result == []:
-        return [[]]
-    return result
+    return server.gamesToday(team_id, date)
 
 st.selectbox(
     "Team",
@@ -155,34 +144,12 @@ st.selectbox(
 @st.cache_data(ttl=86400)  # Cache for 24 hours (current day)
 def getTeamRoster(teamId: int, date: str):
     """Get team roster for a specific team and date, cached for current day"""
-    try:
-        # Get roster data from statsapi
-        roster_data = statsapi.get("team_roster", params={'teamId': teamId, 'date': date})
-        return roster_data
-    except Exception as e:
-        print(f"Error fetching roster for team {teamId}: {e}")
-        return {'roster': []}
+    return server.getTeamRoster(teamId, date)
 
 @st.cache_data(ttl=86400)  # Cache for 24 hours (current day)
 def getTeamPitchers(teamId: int, date: str):
     """Get pitchers from team roster, cached for current day"""
-    roster_data = getTeamRoster(teamId, date)
-    pitchers = []
-    
-    if 'roster' in roster_data:
-        for player in roster_data['roster']:
-            person = player.get('person', {})
-            position = player.get('position', {})
-            
-            # Check if player is a pitcher (position type is 'Pitcher')
-            if position.get('type') == 'Pitcher':
-                pitchers.append({
-                    'id': person.get('id'),
-                    'name': person.get('fullName', 'Unknown'),
-                    'position': position.get('abbreviation', 'P')
-                })
-    
-    return pitchers
+    return server.getTeamPitchers(teamId, date)
 
 # Pitcher selection pills underneath team selection
 if 'team' in st.session_state and st.session_state['team']:
