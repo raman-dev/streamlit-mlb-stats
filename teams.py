@@ -128,16 +128,6 @@ def showTeamsWithStats():
     st.dataframe(df,hide_index=True)
 
 
-def pitchingData():
-    testGameId = 777308
-    """
-        Get pitching data for a game
-    """
-    boxscoreData = statsapi.boxscore_data(gamePk=testGameId)
-    st.write(boxscoreData)
-
-# pitchingData()
-
 showTeamsWithStats()
 
 def logoUrl(teamId):
@@ -161,6 +151,69 @@ st.selectbox(
     key='team',
     format_func=lambda x: x['name']
 )
+
+@st.cache_data(ttl=86400)  # Cache for 24 hours (current day)
+def getTeamRoster(teamId: int, date: str):
+    """Get team roster for a specific team and date, cached for current day"""
+    try:
+        # Get roster data from statsapi
+        roster_data = statsapi.get("team_roster", params={'teamId': teamId, 'date': date})
+        return roster_data
+    except Exception as e:
+        print(f"Error fetching roster for team {teamId}: {e}")
+        return {'roster': []}
+
+@st.cache_data(ttl=86400)  # Cache for 24 hours (current day)
+def getTeamPitchers(teamId: int, date: str):
+    """Get pitchers from team roster, cached for current day"""
+    roster_data = getTeamRoster(teamId, date)
+    pitchers = []
+    
+    if 'roster' in roster_data:
+        for player in roster_data['roster']:
+            person = player.get('person', {})
+            position = player.get('position', {})
+            
+            # Check if player is a pitcher (position type is 'Pitcher')
+            if position.get('type') == 'Pitcher':
+                pitchers.append({
+                    'id': person.get('id'),
+                    'name': person.get('fullName', 'Unknown'),
+                    'position': position.get('abbreviation', 'P')
+                })
+    
+    return pitchers
+
+# Pitcher selection pills underneath team selection
+if 'team' in st.session_state and st.session_state['team']:
+    team_id = st.session_state['team']['id']
+    pitchers = getTeamPitchers(team_id, today_str)
+    
+    if pitchers:
+        pitcher_names = [f"{p['name']} ({p['position']})" for p in pitchers]
+        
+        st.pills(
+            "Select Pitcher",
+            options=pitcher_names,
+            selection_mode="single",
+            key="selected_pitcher"
+        )
+        
+        # Store the selected pitcher data in session state
+        if 'selected_pitcher' in st.session_state and st.session_state['selected_pitcher']:
+            selected_pitcher_name = st.session_state['selected_pitcher']
+            # Find the pitcher data that matches the selected name
+            for pitcher in pitchers:
+                if f"{pitcher['name']} ({pitcher['position']})" == selected_pitcher_name:
+                    st.session_state['selected_pitcher_data'] = pitcher
+                    break
+    else:
+        st.info("No pitchers found for the selected team.")
+        
+        # Debug option - uncomment to see raw roster data structure
+        # with st.expander("Debug: Raw Roster Data"):
+        #     roster_debug = getTeamRoster(team_id, today_str)
+        #     st.json(roster_debug)
 
 # st.button("Clear Team Cache",
 #           on_click=server.clearGamesPlayed,kwargs={
@@ -367,7 +420,14 @@ def showTable(df: pd.DataFrame):
     if st.session_state['tableType'] == "table":
         st.table(df)
     else:
-        st.dataframe(df,hide_index=True)
+        # Create a copy of the dataframe and remove color modifications for dataframe display
+        df_clean = df.copy()
+        if 'Result' in df_clean.columns:
+            # Remove Streamlit color formatting from Result column
+            df_clean['Result'] = df_clean['Result'].str.replace(r':green-background\[([^\]]+)\]', r'\1', regex=True)
+            df_clean['Result'] = df_clean['Result'].str.replace(r':red-background\[([^\]]+)\]', r'\1', regex=True)
+            df_clean['Result'] = df_clean['Result'].str.replace(r':blue-background\[([^\]]+)\]', r'\1', regex=True)
+        st.dataframe(df_clean, hide_index=True)
 
 @st.fragment
 def showGamesPlayed(teamId: int):
@@ -439,5 +499,5 @@ def showGamesPlayed(teamId: int):
 showGamesPlayed(teamId=st.session_state['team']['id'])
 
 # server.aggregateGameDataAndLinescore()
-server.addDatesToTGC()
+# server.addDatesToTGC()
 # server.clearTGC2()

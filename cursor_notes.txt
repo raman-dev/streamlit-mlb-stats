@@ -1,0 +1,39 @@
+Table-dataframe result text fix -> W
+--------------------------------
+    Within teams.py in the showTable function
+    when dataframe is selected the result column still has the 
+    color modifcations of for st.table we need those to not be there when switched and be there
+    when switched back
+    
+    WORKED
+
+Add pitcher selection pills -> W
+---------------------------
+    Within teams.py underneath the team selection box 
+    I would like to have selection pills for the available 
+    pitchers for this current team also cache the solution 
+    for the current day so we don't constantly requery the
+    api
+
+    WORKED
+
+Darken bars on graph where selected pitcher pitched -> DNW
+---------------------------------------------------
+    Within teams.py in the showGraph function if a pitcher
+    has been selected in the hits_allowed_bar we need to make games
+    in which the pitcher did not pitch to have darker bars
+
+    DIDN'T PRODUCE EFFIECIENT SOLUTION BE MORE SPECIFIC
+
+
+Try optimize server.py -> W
+--------------------------------------------------
+    Looking at server.py what optimizations can be made
+    WORKED
+
+Add a page to view cache as tables -> W
+--------------------------------------------------
+    In app.py add a page to view the diskcache as tables
+    WORKED
+
+
